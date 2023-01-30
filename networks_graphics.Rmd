@@ -25,5 +25,35 @@ networks_summary = googlesheets4::read_sheet("https://docs.google.com/spreadshee
 This was a manual synthesis, and as such has some gaps. In the process of filling these in based on the OG, non R friendly version and also from the network websites, but this is a work in progress. 
 
 ```{r full columns, echo=FALSE}
-networks_summary_clean = networks_summary %>% select(Management.Structure, `CDEON Coordinated Distributed Experiments and Observations`, `EON Ecological Observatory Networks`, `LTMP Long-Term Monitoring Programs`, `LTRN Long-Term Research Networks`, `ORC Observational Research Consortia`, Coastal.Ecosystem)
+networks_summary_clean = networks_summary %>% select(PlacebasedHypotheses:QueryDriveResearchQuestions,Management.Structure, Coastal.Ecosystem) %>%
+mutate(across(everything(), ~ ifelse(is.na(.), 0, .)),
+       Management.Structure = as.factor(Management.Structure), 
+       Management.Structure.Numeric = as.numeric(Management.Structure)) %>% #1= Bottom-Up, #2 = Directed, #3 Hybrid 
+    filter(Coastal.Ecosystem == 1) %>%
+  select(-Management.Structure, -Coastal.Ecosystem, -Management.Structure.Numeric) 
+
+
+networks_summary_meta = networks_summary %>%   filter(Coastal.Ecosystem == 1)
 ```
+
+## Plotting 
+
+Making some figures for the manuscript draft
+
+```{r pca, echo=FALSE}
+
+network_pca = prcomp(networks_summary_clean, retx = TRUE, center = TRUE, scale. = TRUE)
+
+biplot(network_pca)
+summary(network_pca)
+
+library(ggfortify)
+network_pca_plot <-autoplot(network_pca, data = networks_summary_meta, colour = 'Management.Structure', size=2,
+                          loadings = TRUE, loadings.colour = 'black',
+                          loadings.label = TRUE, loadings.label.size = 3)+
+cowplot::theme_cowplot()
+
+print(network_pca_plot)
+```
+
+
