@@ -1,0 +1,29 @@
+---
+title: "Network Synthesis Commentary Graphics"
+author: "AMP"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(googlesheets4)
+library(googledrive)
+```
+
+## Load in manual synthesis dataframe
+
+
+```{r networks}
+networks_summary = googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1xjh_PTFbEathR8v5OOU9wY9yBw6C9JI7du6C0L4f_PM/edit?usp=sharing")
+```
+
+## Filter to filled out columns 
+
+This was a manual synthesis, and as such has some gaps. In the process of filling these in based on the OG, non R friendly version and also from the network websites, but this is a work in progress. 
+
+```{r full columns, echo=FALSE}
+networks_summary_clean = networks_summary %>% select(Management.Structure, `CDEON Coordinated Distributed Experiments and Observations`, `EON Ecological Observatory Networks`, `LTMP Long-Term Monitoring Programs`, `LTRN Long-Term Research Networks`, `ORC Observational Research Consortia`, Coastal.Ecosystem)
+```
