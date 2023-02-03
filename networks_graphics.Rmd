@@ -25,15 +25,120 @@ networks_summary = googlesheets4::read_sheet("https://docs.google.com/spreadshee
 This was a manual synthesis, and as such has some gaps. In the process of filling these in based on the OG, non R friendly version and also from the network websites, but this is a work in progress. 
 
 ```{r full columns, echo=FALSE}
-networks_summary_clean = networks_summary %>% select(PlacebasedHypotheses:QueryDriveResearchQuestions,Management.Structure, Coastal.Ecosystem) %>%
+ # networks_summary_clean = networks_summary %>%
+ # mutate(Management.Structure = as.factor(Management.Structure), #1= Bottom-Up, #2 = Directed, #3 Hybrid 
+ #        across(everything(), ~ ifelse(is.na(.), 0, .))) %>%
+ #     filter(Coastal.Ecosystem == 1) %>%
+ #   select(EducationMotivation:PredicitingModelingMotivaiton, PlacebasedHypotheses:CrosssiteExperiments, StandardizedMeasurements:QueryDriveResearchQuestions, Physical:Disturbances, Management.Structure) 
+
+#Need to select variables that make the most sense; acutally need to factorize the individual columns for each thing
+#1 Motivation
+# columns: EducationMotivation, ConservationMotivation, PolicyManagementMotivatiton, MonitoringObservingMotivation, SynthesisCollaborationMotivation, PredicitingModelingMotivaiton
+#2 Approach
+#columns: PlacebasedHypotheses,ExperimentalManipulations, EnvironmentalMonitoring,ProcessbasedMeasurements,
+# CrosssiteDataAssemblage, CrosssiteExperiments, 
+#3 Coordination Strategy
+#columns: StandardizedMeasurements, DataCollectionPolicies, DatabaseStandards, StrategicSciencePriorities,
+# QueryDriveResearchQuestions
+#4 Research Type: 
+#columns: Physical, Biological, Chemical, Ecological, Disturbances 
+#5 Ecosystem Coverage 
+# Filtering for coastal yes for now. 
+#6 Funding Type
+# Management Structure column for now. 
+
+#THERE HAS TO BE A WAY TO ADD FACTORS FOR ALL POSSIBLE COMBOS OF THESE COLUMNS?!!?!?! Need the internet. I dont want to do this manually...
+#maybe a case when something is 1, it pulls the column title? 
+
+boo = networks_summary %>%
 mutate(across(everything(), ~ ifelse(is.na(.), 0, .)),
+       across(everything( as.character())),
+      Test = case_when(str_detect(EducationMotivation:PredicitingModelingMotivaiton, "1") ~ "hmm"))
+
+
+
+
+networks_summary_clean = networks_summary %>%
+mutate(Motivation.text = case_when(EducationMotivation == 1 ~ "Education",
+                        ConservationMotivation == 1 ~ "Conservation",
+                        PolicyManagementMotivatiton == 1 ~ "Policy",
+                        MonitoringObservingMotivation == 1 ~ "Monitoring",
+                        SynthesisCollaborationMotivation == 1 ~ "Synthesis",
+                        PredicitingModelingMotivaiton == 1 ~ "Modeling"),
+        Approach.text = case_when(PlacebasedHypotheses == 1 ~ "Place-based Hypotheses",
+                        ExperimentalManipulations == 1 ~ "Experimental Manipulations",
+                        EnvironmentalMonitoring == 1 ~ "Environmental Monitoring",
+                        ProcessbasedMeasurements== 1 ~ "Process-based Measurements",
+                        CrosssiteDataAssemblage == 1 ~ "Cross-site Data Assemblage",
+                        CrosssiteExperiments== 1 ~ "Crosssite Experiments"),
+        Coordination.Strategy.text = case_when(StandardizedMeasurements == 1 ~ "Standardized Measurements",
+                        DataCollectionPolicies == 1 ~ "Data Collection Policies",
+                        DatabaseStandards== 1 ~ "Database Standards",
+                        StrategicSciencePriorities== 1 ~ "Strategic Science Priorities",
+                        QueryDriveResearchQuestions == 1 ~ "Query Driven Research Questions"),
+       Research.Type.text = case_when(Physical == 1 ~ "Physical",
+                        Biological == 1 ~ "Biological",
+                        Chemical == 1 ~ "Chemical",
+                        Ecological == 1 ~ "Ecological",
+                        Disturbances == 1 ~ "Disturbances"),
+       Management.Structure = as.factor(Management.Structure),
+       `Management Structure` = as.numeric(Management.Structure),#1= Bottom-Up, #2 = Directed, #3 Hybrid
+       # Geographic = as.factor(Geographic),
+       # Geographic.Numeric = as.numeric(Geographic)) %>%
+       Motivation.text = as.factor(Motivation.text),
+       Motivation = as.numeric(Motivation.text),
+       Approach.text = as.factor(Approach.text),
+       Approach = as.numeric(Approach.text),
+       Coordination.Strategy.text = as.factor(Coordination.Strategy.text),
+       `Coordination Strategy` = as.numeric(Coordination.Strategy.text),
+        Research.Type.text = as.factor(Research.Type.text),
+       `Research Type` = as.numeric(Research.Type.text),
+       across(everything(), ~ ifelse(is.na(.), 1, .))
+       ) %>%
+    filter(Coastal.Ecosystem == 1)%>%
+  select(Motivation, Approach, `Coordination Strategy`, `Management Structure`, `Research Type`)
+
+
+networks_summary_meta = networks_summary %>%  filter(Coastal.Ecosystem == 1) %>%
+  mutate(across(everything(), ~ ifelse(is.na(.), 0, .)),
+    `CDEON Coordinated Distributed Experiments and Observations` = ifelse(is.na(`CDEON Coordinated Distributed Experiments and Observations`),0,`CDEON Coordinated Distributed Experiments and Observations`),
+         `EON Ecological Observatory Networks` = ifelse(is.na(`EON Ecological Observatory Networks`),0,`EON Ecological Observatory Networks`),
+         `LTMP Long-Term Monitoring Programs` = ifelse(is.na(`LTMP Long-Term Monitoring Programs`),0,`LTMP Long-Term Monitoring Programs`),
+         `LTRN Long-Term Research Networks` = ifelse(is.na(`LTRN Long-Term Research Networks`),0,`LTRN Long-Term Research Networks`),
+         `ORC Observational Research Consortia` = ifelse(is.na(`ORC Observational Research Consortia`),0,`ORC Observational Research Consortia`),
+  Network.Category= case_when(`CDEON Coordinated Distributed Experiments and Observations` == 1 ~ "CDEON",
+                        `EON Ecological Observatory Networks` == 1 ~ "EON",
+                        `LTMP Long-Term Monitoring Programs`== 1 ~ "LTMP",
+                        `LTRN Long-Term Research Networks` == 1 ~ "LTRN",
+                        `ORC Observational Research Consortia` == 1 ~ "ORC"),
+Motivation.text = case_when(EducationMotivation == 1 ~ "Education",
+                        ConservationMotivation == 1 ~ "Conservation",
+                        PolicyManagementMotivatiton == 1 ~ "Policy",
+                        MonitoringObservingMotivation == 1 ~ "Monitoring",
+                        SynthesisCollaborationMotivation == 1 ~ "Synthesis",
+                        PredicitingModelingMotivaiton == 1 ~ "Modeling"),
+        Approach.text = case_when(PlacebasedHypotheses == 1 ~ "Place-based Hypotheses",
+                        ExperimentalManipulations == 1 ~ "Experimental Manipulations",
+                        EnvironmentalMonitoring == 1 ~ "Environmental Monitoring",
+                        ProcessbasedMeasurements== 1 ~ "Process-based Measurements",
+                        CrosssiteDataAssemblage == 1 ~ "Cross-site Data Assemblage",
+                        CrosssiteExperiments== 1 ~ "Crosssite Experiments"),
+        Coordination.Strategy.text = case_when(StandardizedMeasurements == 1 ~ "Standardized Measurements",
+                        DataCollectionPolicies == 1 ~ "Data Collection Policies",
+                        DatabaseStandards== 1 ~ "Database Standards",
+                        StrategicSciencePriorities== 1 ~ "Strategic Science Priorities",
+                        QueryDriveResearchQuestions == 1 ~ "Query Driven Research Questions"),
+       Research.Type.text = case_when(Physical == 1 ~ "Physical",
+                        Biological == 1 ~ "Biological",
+                        Chemical == 1 ~ "Chemical",
+                        Ecological == 1 ~ "Ecological",
+                        Disturbances == 1 ~ "Disturbances"),
        Management.Structure = as.factor(Management.Structure), 
-       Management.Structure.Numeric = as.numeric(Management.Structure)) %>% #1= Bottom-Up, #2 = Directed, #3 Hybrid 
-    filter(Coastal.Ecosystem == 1) %>%
-  select(-Management.Structure, -Coastal.Ecosystem, -Management.Structure.Numeric) 
-
-
-networks_summary_meta = networks_summary %>%   filter(Coastal.Ecosystem == 1)
+       Motivation = as.factor(Motivation.text), 
+       Approach = as.factor(Approach.text), 
+       `Coordination Strategy` = as.factor(Coordination.Strategy.text), 
+       `Research Type` = as.factor(Research.Type.text)
+)
 ```
 
 ## Plotting 
@@ -48,7 +153,7 @@ biplot(network_pca)
 summary(network_pca)
 
 library(ggfortify)
-network_pca_plot <-autoplot(network_pca, data = networks_summary_meta, colour = 'Management.Structure', size=2,
+network_pca_plot <-autoplot(network_pca, data = networks_summary_meta, colour = "Network.Category", size=2,
                           loadings = TRUE, loadings.colour = 'black',
                           loadings.label = TRUE, loadings.label.size = 3)+
 cowplot::theme_cowplot()
