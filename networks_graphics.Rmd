@@ -50,10 +50,9 @@ This was a manual synthesis, and as such has some gaps. In the process of fillin
 #THERE HAS TO BE A WAY TO ADD FACTORS FOR ALL POSSIBLE COMBOS OF THESE COLUMNS?!!?!?! Need the internet. I dont want to do this manually...
 #maybe a case when something is 1, it pulls the column title? 
 
-boo = networks_summary %>%
+networks_summary_clean_1 = networks_summary %>%
 mutate(across(everything(), ~ ifelse(is.na(.), 0, .)),
-       across(everything( as.character())),
-      Test = case_when(str_detect(EducationMotivation:PredicitingModelingMotivaiton, "1") ~ "hmm"))
+       across(everything( as.character())))
 
 
 
@@ -160,5 +159,26 @@ cowplot::theme_cowplot()
 
 print(network_pca_plot)
 ```
+```{r nmds, echo=FALSE}
+
+library(vegan)
+
+network_nmds =
+  metaMDS(networks_summary_clean,
+          distance = "bray",
+          k = 3,
+          maxit = 999, 
+          trymax = 500,
+          wascores = TRUE)
+# Run 20 stress 0.0902017 
+# ... Procrustes: rmse 0.0005480386  max resid 0.002200324 
+goodness(network_nmds)
+stressplot(network_nmds)
+
+network_nmds %>% ordiplot(type='none') %>% text("sites") 
+
+```
+
+
 
 
