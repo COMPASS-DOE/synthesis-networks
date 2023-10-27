@@ -54,9 +54,6 @@ networks_summary_clean_1 = networks_summary %>%
 mutate(across(everything(), ~ ifelse(is.na(.), 0, .)),
        across(everything( as.character())))
 
-
-
-
 networks_summary_clean = networks_summary %>%
 mutate(Motivation.text = case_when(EducationMotivation == 1 ~ "Education",
                         ConservationMotivation == 1 ~ "Conservation",
@@ -94,11 +91,10 @@ mutate(Motivation.text = case_when(EducationMotivation == 1 ~ "Education",
        `Research Type` = as.numeric(Research.Type.text),
        across(everything(), ~ ifelse(is.na(.), 1, .))
        ) %>%
-    filter(Coastal.Ecosystem == 1)%>%
   select(Motivation, Approach, `Coordination Strategy`, `Management Structure`, `Research Type`)
 
 
-networks_summary_meta = networks_summary %>%  filter(Coastal.Ecosystem == 1) %>%
+networks_summary_meta = networks_summary %>%
   mutate(across(everything(), ~ ifelse(is.na(.), 0, .)),
     `CDEON Coordinated Distributed Experiments and Observations` = ifelse(is.na(`CDEON Coordinated Distributed Experiments and Observations`),0,`CDEON Coordinated Distributed Experiments and Observations`),
          `EON Ecological Observatory Networks` = ifelse(is.na(`EON Ecological Observatory Networks`),0,`EON Ecological Observatory Networks`),
@@ -138,6 +134,15 @@ Motivation.text = case_when(EducationMotivation == 1 ~ "Education",
        `Coordination Strategy` = as.factor(Coordination.Strategy.text), 
        `Research Type` = as.factor(Research.Type.text)
 )
+```
+
+```{r filter to coastal}
+
+networks_summary_clean_coastal = networks_summary_clean %>% 
+  filter(Coastal.Ecosystem == 1)
+
+networks_summary_meta_coastal = networks_summary_meta %>%
+  filter(Coastal.Ecosystem == 1)
 ```
 
 ## Plotting 
