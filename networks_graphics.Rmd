@@ -19,7 +19,12 @@ library(googledrive)
 ```{r networks}
 networks_summary = googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1xjh_PTFbEathR8v5OOU9wY9yBw6C9JI7du6C0L4f_PM/edit?usp=sharing")
 ```
-
+Tally up the number of networks that have a coastal site: 
+```{r tally}
+ns_tally <- networks_summary %>%
+  group_by(Coastal.Ecosystem)%>%
+  count()
+```
 ## Filter to filled out columns 
 
 This was a manual synthesis, and as such has some gaps. In the process of filling these in based on the OG, non R friendly version and also from the network websites, but this is a work in progress. 

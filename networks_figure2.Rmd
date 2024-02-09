@@ -1,0 +1,21 @@
+---
+title: "Figure 2 Network Synthesis"
+author: "AMP"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(googlesheets4)
+library(googledrive)
+
+getwd()
+```
+
+```{r load in data}
+
+hexs_lc_nw <- readxl::read_excel("./hexagons_State_Land_cover_Hazards.xlsx")
+```
