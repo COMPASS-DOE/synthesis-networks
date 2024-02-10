@@ -77,7 +77,7 @@ state_lc_nw  %>%
              y=rel_num_all_networks_per_hex, color=factor(dominant_LC)))+
  geom_point()+
   theme_classic() +
-  labs(x = "Relative Total Number of Hazards per State", y = "Relative Number of Network Sites withink 50km per State", fill = "Dominant Land Cover Type")
+  labs(x = "Relative Total Number of Hazards per State", y = "Relative Number of Network Sites withink 50km per State", color = "Dominant Land Cover Type")
 ```
 
 +
