@@ -22,38 +22,62 @@ hexs_lc_nw <- readxl::read_excel("./hexagons_State_Land_cover_Hazards.xlsx")
 
 ```{r summarize by state & lc}
 
+hazards <- hexs_lc_nw %>%
+  select(Hurricane:Total_hazards) %>%
+  colnames() 
+
 state_lc_nw <- hexs_lc_nw %>%
   select(STATE_NAME,dominant_LC,Hurricane:Total_hazards,count_coord_distrib_exp_obs:count_reserves_50km) %>%
-  as.data.frame()%>%
+  as.data.frame() %>%
   group_by(STATE_NAME,dominant_LC) %>%
   mutate(number_hex = n()) %>%
   ungroup()%>%
  group_by(STATE_NAME,dominant_LC,number_hex) %>%
-dplyr::summarise(across(everything(), sum)) %>%
-  mutate(avg_number_haz = Total_hazards/number_hex)
+ rename_with(.cols=matches(hazards), ~paste0('haz_', .x)) %>%
+  dplyr::summarise(across(everything(), sum)) %>%
+  ungroup() %>%
+  dplyr::mutate(across(starts_with("haz"), ~.x /number_hex),
+                across(starts_with("count"), ~.x /number_hex) ) %>%
+    group_by(STATE_NAME, dominant_LC) %>%
+   dplyr::mutate(rel_num_all_haz_per_hex= rowSums(pick(haz_Hurricane:haz_SLR), na.rm = TRUE)) %>% #this is the total relative proportion of all hazards per hexagon. for example, 100% of Alabama Hexs are vulnerable to hurricanes, while only 40% are vulnerable to flooding so the sum of this number is the rel number of hazards each hex in that state would be exposed to...
+dplyr::mutate(rel_num_all_networks_per_hex= rowSums(pick(count_coord_distrib_exp_obs:count_ecolo_obs_netw_NERRpoly), na.rm = TRUE))
 
-state_lc_sum <- state_lc_nw %>%
+state_lc_haznw_sum <- state_lc_nw %>%
  group_by(STATE_NAME) %>%
-  select(STATE_NAME,dominant_LC,number_hex,Total_hazards,count_coord_distrib_exp_obs:count_ecolo_obs_netw_NERRpoly)%>%
-    pivot_wider(names_from = dominant_LC, values_from = c(number_hex,Total_hazards,count_coord_distrib_exp_obs:count_ecolo_obs_netw_NERRpoly))
+  select(STATE_NAME,dominant_LC, rel_num_all_haz_per_hex,rel_num_all_networks_per_hex)%>%
+    pivot_wider(names_from = dominant_LC, values_from = c(rel_num_all_haz_per_hex,rel_num_all_networks_per_hex))
+```
+National Wetland Condition Assessment Grouped Ecoregions
+To allow assessment of condition for distinct wetland types across ecoregions with an acceptable degree of statistical certainty (i.e., a sufficient number of sampled sites by wetland type), NWCA further combined the nine aggregated ecoregions into five NWCA ecoregions:
+
+Coastal Plains = Alabama, Arkansas, Delaware, Florida, Georgia, Kentucky, Maryland, Massachusetts, Mississippi, New Jersey, New York, North Carolina, Oklahoma, South Carolina, Rhode Island, Tennessee, Texas and Virginia
+Eastern Mountains and Upper Midwest
+Inland Plains
+Western Mountains
+Xeric
+
+https://www.epa.gov/national-aquatic-resource-surveys/ecoregions-used-national-aquatic-resource-surveys
+
+```{r ecoregions}
+ecoregions <- state_lc_nw %>%
+  select(STATE_NAME) %>%
+  unique(STATE_NAME) %>%
+  mutate(ecoregion = case_when(STATE_NAME %in% c(Alabama, Arkansas, Delaware, Florida, Georgia, Kentucky, Maryland, Massachusetts, Mississippi, New Jersey, New York, North Carolina, Oklahoma, South Carolina, Rhode Island, Tennessee, Texas,Virginia) ~ "coastal plain",
+                              STATE_NAME %in% c(Alabama, Arkansas, Delaware, Florida, Georgia, Kentucky, Maryland, Massachusetts, Mississippi, New Jersey, New York, North Carolina, Oklahoma, South Carolina, Rhode Island, Tennessee, Texas,Virginia) ~ "coastal plain",
+                               
+    
+  ))
 ```
 
 ```{r figures}
-hexs_lc_nw  %>%
-  ggplot()+
-  geom_density(aes(Total_hazards, color=dominant_LC))+
-  theme_classic()
-
-hexs_lc_nw  %>%
-  ggplot()+
-  geom_density(aes(count_reserves_50km, color=dominant_LC))+
-  theme_classic()
 
 state_lc_nw  %>%
- ggplot(aes(x=factor(STATE_NAME),
-             y=number_hex, fill=factor(dominant_LC)))+
- geom_bar(stat = 'identity')+
-  theme_classic()
+  filter(!dominant_LC %in% "water") %>%
+ ggplot(aes(x=rel_num_all_haz_per_hex,
+             y=rel_num_all_networks_per_hex, color=factor(dominant_LC)))+
+ geom_point()+
+  theme_classic() +
+  labs(x = "Relative Total Number of Hazards per State", y = "Relative Number of Network Sites withink 50km per State", fill = "Dominant Land Cover Type")
 ```
 
 +
