@@ -19,3 +19,53 @@ getwd()
 
 hexs_lc_nw <- readxl::read_excel("./hexagons_State_Land_cover_Hazards.xlsx")
 ```
+
+```{r summarize by state & lc}
+
+state_lc_nw <- hexs_lc_nw %>%
+  select(STATE_NAME,dominant_LC,Hurricane:Total_hazards,count_coord_distrib_exp_obs:count_reserves_50km) %>%
+  as.data.frame()%>%
+  group_by(STATE_NAME,dominant_LC) %>%
+  mutate(number_hex = n()) %>%
+  ungroup()%>%
+ group_by(STATE_NAME,dominant_LC,number_hex) %>%
+dplyr::summarise(across(everything(), sum)) %>%
+  mutate(avg_number_haz = Total_hazards/number_hex)
+
+state_lc_sum <- state_lc_nw %>%
+ group_by(STATE_NAME) %>%
+  select(STATE_NAME,dominant_LC,number_hex,Total_hazards,count_coord_distrib_exp_obs:count_ecolo_obs_netw_NERRpoly)%>%
+    pivot_wider(names_from = dominant_LC, values_from = c(number_hex,Total_hazards,count_coord_distrib_exp_obs:count_ecolo_obs_netw_NERRpoly))
+```
+
+```{r figures}
+hexs_lc_nw  %>%
+  ggplot()+
+  geom_density(aes(Total_hazards, color=dominant_LC))+
+  theme_classic()
+
+hexs_lc_nw  %>%
+  ggplot()+
+  geom_density(aes(count_reserves_50km, color=dominant_LC))+
+  theme_classic()
+
+state_lc_nw  %>%
+ ggplot(aes(x=factor(STATE_NAME),
+             y=number_hex, fill=factor(dominant_LC)))+
+ geom_bar(stat = 'identity')+
+  theme_classic()
+```
+
++
+  labs(x = "Burn Type", y = "Leached Nitrogen \n (mg TDN/ g N)", fill = "Land Coverage")+
+   theme(legend.position="none", 
+        plot.title =  element_text(size=12), axis.text.y=element_text(size=12,
+                                                                     color="black"),
+        axis.title.y=element_text(size=12),
+        axis.text.x= element_text(size=10, color= "black",angle = 45, hjust = 1),
+        axis.title.x=element_text(size=12),
+        strip.text = element_blank())+
+  facet_wrap(~factor(Land_Coverage_Category,level=veg_order), nrow = 1)+
+  theme(strip.background = element_blank())+
+  scale_fill_manual(values=color_order2)  + 
+  scale_y_continuous(limits=c(0,150),breaks=seq(0,150,50))
