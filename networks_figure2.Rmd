@@ -17,7 +17,9 @@ getwd()
 
 ```{r load in data}
 
-hexs_lc_nw <- readxl::read_excel("./hexagons_State_Land_cover_Hazards.xlsx")
+#hexs_lc_nw <- readxl::read_excel("./hexagons_State_Land_cover_Hazards.xlsx")
+
+hexs_lc_nw <- readxl::read_excel("./hexagons_Ecoregion_TableToExcel.xlsx")
 ```
 
 ```{r summarize by state & lc}
@@ -27,58 +29,123 @@ hazards <- hexs_lc_nw %>%
   colnames() 
 
 state_lc_nw <- hexs_lc_nw %>%
-  select(STATE_NAME,dominant_LC,Hurricane:Total_hazards,count_coord_distrib_exp_obs:count_reserves_50km) %>%
+  select(WSA9_NAME,area_hexagon_sqkm,dominant_LC,Hurricane:Total_hazards,count_coord_distrib_exp_obs:count_reserves_50km) %>%
   as.data.frame() %>%
-  group_by(STATE_NAME,dominant_LC) %>%
+  group_by(WSA9_NAME,dominant_LC) %>%
   mutate(number_hex = n()) %>%
   ungroup()%>%
- group_by(STATE_NAME,dominant_LC,number_hex) %>%
+ group_by(WSA9_NAME,dominant_LC,number_hex) %>%
  rename_with(.cols=matches(hazards), ~paste0('haz_', .x)) %>%
   dplyr::summarise(across(everything(), sum)) %>%
   ungroup() %>%
   dplyr::mutate(across(starts_with("haz"), ~.x /number_hex),
                 across(starts_with("count"), ~.x /number_hex) ) %>%
-    group_by(STATE_NAME, dominant_LC) %>%
+    group_by(WSA9_NAME, dominant_LC) %>%
    dplyr::mutate(rel_num_all_haz_per_hex= rowSums(pick(haz_Hurricane:haz_SLR), na.rm = TRUE)) %>% #this is the total relative proportion of all hazards per hexagon. for example, 100% of Alabama Hexs are vulnerable to hurricanes, while only 40% are vulnerable to flooding so the sum of this number is the rel number of hazards each hex in that state would be exposed to...
 dplyr::mutate(rel_num_all_networks_per_hex= rowSums(pick(count_coord_distrib_exp_obs:count_ecolo_obs_netw_NERRpoly), na.rm = TRUE))
 
 state_lc_haznw_sum <- state_lc_nw %>%
- group_by(STATE_NAME) %>%
-  select(STATE_NAME,dominant_LC, rel_num_all_haz_per_hex,rel_num_all_networks_per_hex)%>%
+ group_by(WSA9_NAME) %>%
+  select(WSA9_NAME,dominant_LC, rel_num_all_haz_per_hex,rel_num_all_networks_per_hex)%>%
     pivot_wider(names_from = dominant_LC, values_from = c(rel_num_all_haz_per_hex,rel_num_all_networks_per_hex))
 ```
 National Wetland Condition Assessment Grouped Ecoregions
-To allow assessment of condition for distinct wetland types across ecoregions with an acceptable degree of statistical certainty (i.e., a sufficient number of sampled sites by wetland type), NWCA further combined the nine aggregated ecoregions into five NWCA ecoregions:
-
-Coastal Plains = Alabama, Arkansas, Delaware, Florida, Georgia, Kentucky, Maryland, Massachusetts, Mississippi, New Jersey, New York, North Carolina, Oklahoma, South Carolina, Rhode Island, Tennessee, Texas and Virginia
-Eastern Mountains and Upper Midwest
-Inland Plains
-Western Mountains
-Xeric
 
 https://www.epa.gov/national-aquatic-resource-surveys/ecoregions-used-national-aquatic-resource-surveys
 
+To allow assessment of condition for distinct wetland types across ecoregions with an acceptable degree of statistical certainty (i.e., a sufficient number of sampled sites by wetland type), NWCA further combined the nine aggregated ecoregions into five NWCA ecoregions:
+
+Coastal Plains = Coastal Plains
+Eastern Mountains and Upper Midwest = Northern Appalachians + Southern Appalachians + Upper Midwest
+Inland Plains = Southern Plains + Temperate Plains + Northern Plains 
+Western Mountains = Western Mountains
+Xeric = Xeric
+
 ```{r ecoregions}
-ecoregions <- state_lc_nw %>%
-  select(STATE_NAME) %>%
-  unique(STATE_NAME) %>%
-  mutate(ecoregion = case_when(STATE_NAME %in% c(Alabama, Arkansas, Delaware, Florida, Georgia, Kentucky, Maryland, Massachusetts, Mississippi, New Jersey, New York, North Carolina, Oklahoma, South Carolina, Rhode Island, Tennessee, Texas,Virginia) ~ "coastal plain",
-                              STATE_NAME %in% c(Alabama, Arkansas, Delaware, Florida, Georgia, Kentucky, Maryland, Massachusetts, Mississippi, New Jersey, New York, North Carolina, Oklahoma, South Carolina, Rhode Island, Tennessee, Texas,Virginia) ~ "coastal plain",
-                               
-    
-  ))
+state_lc_nw_eco <- state_lc_nw %>%
+  mutate(ecoregion = case_when(
+    str_detect(WSA9_NAME, regex("Northern Appalachians|Southern Appalachians|Upper Midwest", ignore_case=TRUE)) ~ "Eastern Mountains and Upper Midwest",
+     str_detect(WSA9_NAME, regex("Southern Plains|Temperate Plains|Northern Plains", ignore_case=TRUE)) ~ "Inland Plains",
+                              TRUE ~ WSA9_NAME))
+```
+
+```{r try with all data}
+hexs_lc_nw_all <- hexs_lc_nw %>%
+   mutate(ecoregion = case_when(
+    str_detect(WSA9_NAME, regex("Northern Appalachians|Southern Appalachians|Upper Midwest", ignore_case=TRUE)) ~ "Eastern Mountains and Upper Midwest",
+     str_detect(WSA9_NAME, regex("Southern Plains|Temperate Plains|Northern Plains", ignore_case=TRUE)) ~ "Inland Plains",
+                              TRUE ~ WSA9_NAME)) %>%
+  select(ecoregion,dominant_LC ,Total_hazards,count_reserves_50km) %>%
+    filter(!dominant_LC %in% "water")
 ```
 
 ```{r figures}
 
-state_lc_nw  %>%
+region <- c( "Western Mountains","Xeric", "Inland Plains", "Coastal Plains", "Eastern Mountains and Upper Midwest")
+region_colors= c("#A87001","#BFD2F9","#A9A800","#FFAA01", "#6CDFEF")
+
+state_lc_nw_eco %>%
   filter(!dominant_LC %in% "water") %>%
+  filter(number_hex > 1) %>%
  ggplot(aes(x=rel_num_all_haz_per_hex,
-             y=rel_num_all_networks_per_hex, color=factor(dominant_LC)))+
+             y=rel_num_all_networks_per_hex, color=factor(ecoregion, levels = region), size=area_hexagon_sqkm))+
+   scale_size(range = c(1, 10), name="Total Area sq km") +
+   scale_color_manual(values=region_colors) +
  geom_point()+
   theme_classic() +
-  labs(x = "Relative Total Number of Hazards per State", y = "Relative Number of Network Sites withink 50km per State", color = "Dominant Land Cover Type")
+  labs(x = "Relative Total Number of Hazards per Ecoregion", y = "Relative Number of Network Sites withink 50km per Ecoregion", color = "Ecoregion")
+
+state_lc_nw_eco %>%
+  filter(!dominant_LC %in% "water") %>%
+  filter(number_hex > 1) %>%
+ ggplot(aes(x=rel_num_all_haz_per_hex,
+             y=rel_num_all_networks_per_hex, color=dominant_LC, size=area_hexagon_sqkm))+
+   scale_size(range = c(1, 10), name="Total Area sq km") +
+ geom_point()+
+  theme_classic() +
+  labs(x = "Relative Total Number of Hazards per Ecoregion", y = "Relative Number of Network Sites withink 50km per Ecoregion", color = "Dominant Land Cover")
+
+ 
+hexs_lc_nw_all %>%
+  ggplot(aes(x=Total_hazards,
+             y=count_reserves_50km))+
+  geom_hex()+
+    theme_classic() +
+  labs(x = "Total Number of Hazards", y = "Network Sites withink 50km")
+
 ```
+hexs_lc_nw_all %>%
+#  filter(!dominant_LC %in% "water") %>%
+ ggplot(aes(x=Total_hazards,
+             y=count_reserves_50km, color=factor(ecoregion)))+
+ geom_point()+
+  theme_classic() +
+  labs(x = "Relative Total Number of Hazards per Ecoregion", y = "Relative Number of Network Sites withink 50km per Ecoregion", color = "Ecoregion")
+
+hexs_lc_nw_all %>%
+ # filter(!dominant_LC %in% "water") %>%
+ ggplot(aes(x=count_reserves_50km,
+ fill=factor(ecoregion)))+
+ geom_density(alpha=0.3)+
+  theme_classic() +
+  labs(x = "Number of Network Sites withink 50km", y = "Density", fill = "Ecoregion")
+  
+hexs_lc_nw_all %>%
+#  filter(!dominant_LC %in% "water") %>%
+  filter(count_reserves_50km == 0) %>%
+ ggplot(aes(x=Total_hazards,
+ fill=factor(ecoregion)))+
+ geom_density(alpha=0.3)+
+  theme_classic() +
+  labs(x = "Total Number of Hazards", y = "Density", fill = "Ecoregion")
+
+hexs_lc_nw_all %>%
+#  filter(!dominant_LC %in% "water") %>%
+ ggplot(aes(x=net_haz,
+ fill=factor(ecoregion)))+
+ geom_density(alpha=0.3)+
+  theme_classic() +
+  labs(x = "Network Sites within 50km / Total Number of Hazards", y = "Density", fill = "Ecoregion")
 
 +
   labs(x = "Burn Type", y = "Leached Nitrogen \n (mg TDN/ g N)", fill = "Land Coverage")+
