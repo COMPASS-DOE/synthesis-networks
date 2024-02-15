@@ -105,6 +105,16 @@ state_lc_nw_eco %>%
   theme_classic() +
   labs(x = "Relative Total Number of Hazards per Ecoregion", y = "Relative Number of Network Sites withink 50km per Ecoregion", color = "Dominant Land Cover")
 
+state_lc_nw_eco %>%
+  filter(!dominant_LC %in% "water") %>%
+  filter(number_hex > 1) %>%
+ ggplot(aes(x=dominant_LC,
+             y=area_hexagon_sqkm, fill=factor(ecoregion, levels = region)))+
+ geom_col(position = position_dodge())+
+  scale_fill_manual(values=region_colors) +
+  theme_classic() +
+  labs(x = "Dominant landcover type", y = "Area sq km", color = "Ecoregion")
+
  
 hexs_lc_nw_all %>%
   ggplot(aes(x=Total_hazards,
