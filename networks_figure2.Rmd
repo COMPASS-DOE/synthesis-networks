@@ -66,7 +66,14 @@ state_lc_nw_eco <- state_lc_nw %>%
   mutate(ecoregion = case_when(
     str_detect(WSA9_NAME, regex("Northern Appalachians|Southern Appalachians|Upper Midwest", ignore_case=TRUE)) ~ "Eastern Mountains and Upper Midwest",
      str_detect(WSA9_NAME, regex("Southern Plains|Temperate Plains|Northern Plains", ignore_case=TRUE)) ~ "Inland Plains",
-                              TRUE ~ WSA9_NAME))
+                              TRUE ~ WSA9_NAME)) %>%
+  group_by(dominant_LC) %>%
+  mutate(lc_area_ecoregion = sum(area_hexagon_sqkm),
+         per_lc_area_ecoregion = ((area_hexagon_sqkm/lc_area_ecoregion)*100)) %>%
+  ungroup() %>%
+    group_by(ecoregion) %>%
+  mutate(ecoregion_area_lc = sum(area_hexagon_sqkm),
+         per_ecoregion_area_by_lc = ((area_hexagon_sqkm/ecoregion_area_lc)*100)) 
 ```
 
 ```{r try with all data}
@@ -84,38 +91,61 @@ hexs_lc_nw_all <- hexs_lc_nw %>%
 region <- c( "Western Mountains","Xeric", "Inland Plains", "Coastal Plains", "Eastern Mountains and Upper Midwest")
 region_colors= c("#A87001","#BFD2F9","#A9A800","#FFAA01", "#6CDFEF")
 
-state_lc_nw_eco %>%
+figure2b = state_lc_nw_eco %>%
   filter(!dominant_LC %in% "water") %>%
-  filter(number_hex > 1) %>%
+  filter(rel_num_all_haz_per_hex > 1) %>%
  ggplot(aes(x=rel_num_all_haz_per_hex,
              y=rel_num_all_networks_per_hex, color=factor(ecoregion, levels = region), size=area_hexagon_sqkm))+
-   scale_size(range = c(1, 10), name="Total Area sq km") +
+   scale_size(range = c(1, 10), name="Area Represented (sq km)") +
    scale_color_manual(values=region_colors) +
  geom_point()+
   theme_classic() +
-  labs(x = "Relative Total Number of Hazards per Ecoregion", y = "Relative Number of Network Sites withink 50km per Ecoregion", color = "Ecoregion")
+     theme(axis.text.x = element_text(color ="black"), axis.text.y = element_text(color="black")) +
+  labs(x = "Relative Total Number \n of Hazards per Ecoregion", y = "Relative Number of \n Network Sites withink 50km per Ecoregion", color = "Ecoregion")
+
+cowplot::save_plot("./Figures/Figure2b.pdf", figure2b, base_asp = 2, dpi=300)
+
 
 state_lc_nw_eco %>%
   filter(!dominant_LC %in% "water") %>%
-  filter(number_hex > 1) %>%
+ filter(rel_num_all_haz_per_hex > 1) %>%
  ggplot(aes(x=rel_num_all_haz_per_hex,
              y=rel_num_all_networks_per_hex, color=dominant_LC, size=area_hexagon_sqkm))+
-   scale_size(range = c(1, 10), name="Total Area sq km") +
+   scale_size(range = c(1, 10), name="Area sq km") +
  geom_point()+
   theme_classic() +
+   theme(axis.text.x = element_text(color ="black"), axis.text.y = element_text(color="black")) +
   labs(x = "Relative Total Number of Hazards per Ecoregion", y = "Relative Number of Network Sites withink 50km per Ecoregion", color = "Dominant Land Cover")
+
+figure2c = state_lc_nw_eco %>%
+   mutate(dominant_LC= stringr::str_replace_all(dominant_LC, pattern = "bare_land", replacement = "bare land")) %>%
+  mutate(dominant_LC= stringr::str_replace_all(dominant_LC, pattern = "herb_wetland", replacement = "herbaceous wetland")) %>%
+   mutate(dominant_LC= stringr::str_replace_all(dominant_LC, pattern = "woody_wetland", replacement = "woody wetland")) %>%
+  filter(!dominant_LC %in% "water") %>%
+ # filter(number_hex > 1) %>%
+ ggplot(aes(x=dominant_LC,
+             y=per_lc_area_ecoregion, fill=factor(ecoregion, levels = region)))+
+ geom_col(position = position_stack())+
+  scale_fill_manual(values=region_colors) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, color ="black"), axis.text.y = element_text(color="black")) +
+  labs(x = "Dominant landcover type", y = "Relative Area of \n landcover type by ecoregion (%)", fill = "Ecoregion")
+
+cowplot::save_plot("./Figures/Figure2c.pdf", figure2c, base_asp = 2, dpi=300)
+
+
+
 
 state_lc_nw_eco %>%
   filter(!dominant_LC %in% "water") %>%
-  filter(number_hex > 1) %>%
+ # filter(number_hex > 1) %>%
  ggplot(aes(x=dominant_LC,
-             y=area_hexagon_sqkm, fill=factor(ecoregion, levels = region)))+
- geom_col(position = position_dodge())+
+             y=per_ecoregion_area_by_lc, fill=factor(ecoregion, levels = region)))+
+ geom_col(position=position_stack())+
   scale_fill_manual(values=region_colors) +
   theme_classic() +
-  labs(x = "Dominant landcover type", y = "Area sq km", color = "Ecoregion")
+  labs(x = "Dominant landcover type", y = "Area of the Ecoregion (%)", fill= "Ecoregion")
 
- 
 hexs_lc_nw_all %>%
   ggplot(aes(x=Total_hazards,
              y=count_reserves_50km))+
