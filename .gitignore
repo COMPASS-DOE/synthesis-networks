@@ -39,3 +39,6 @@ vignettes/*.pdf
 .Renviron
 .DS_Store
 *.ai
+
+#archived analyses etc
+/archive do not commit/
