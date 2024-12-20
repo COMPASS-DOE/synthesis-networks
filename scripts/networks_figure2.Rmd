@@ -17,8 +17,6 @@ getwd()
 
 ```{r load in data}
 
-#hexs_lc_nw <- readxl::read_excel("./hexagons_State_Land_cover_Hazards.xlsx")
-
 hexs_lc_nw <- readxl::read_excel("./hexagons_Ecoregion_TableToExcel.xlsx")
 ```
 
@@ -154,49 +152,3 @@ hexs_lc_nw_all %>%
   labs(x = "Total Number of Hazards", y = "Network Sites withink 50km")
 
 ```
-hexs_lc_nw_all %>%
-#  filter(!dominant_LC %in% "water") %>%
- ggplot(aes(x=Total_hazards,
-             y=count_reserves_50km, color=factor(ecoregion)))+
- geom_point()+
-  theme_classic() +
-  labs(x = "Relative Total Number of Hazards per Ecoregion", y = "Relative Number of Network Sites withink 50km per Ecoregion", color = "Ecoregion")
-
-hexs_lc_nw_all %>%
- # filter(!dominant_LC %in% "water") %>%
- ggplot(aes(x=count_reserves_50km,
- fill=factor(ecoregion)))+
- geom_density(alpha=0.3)+
-  theme_classic() +
-  labs(x = "Number of Network Sites withink 50km", y = "Density", fill = "Ecoregion")
-  
-hexs_lc_nw_all %>%
-#  filter(!dominant_LC %in% "water") %>%
-  filter(count_reserves_50km == 0) %>%
- ggplot(aes(x=Total_hazards,
- fill=factor(ecoregion)))+
- geom_density(alpha=0.3)+
-  theme_classic() +
-  labs(x = "Total Number of Hazards", y = "Density", fill = "Ecoregion")
-
-hexs_lc_nw_all %>%
-#  filter(!dominant_LC %in% "water") %>%
- ggplot(aes(x=net_haz,
- fill=factor(ecoregion)))+
- geom_density(alpha=0.3)+
-  theme_classic() +
-  labs(x = "Network Sites within 50km / Total Number of Hazards", y = "Density", fill = "Ecoregion")
-
-+
-  labs(x = "Burn Type", y = "Leached Nitrogen \n (mg TDN/ g N)", fill = "Land Coverage")+
-   theme(legend.position="none", 
-        plot.title =  element_text(size=12), axis.text.y=element_text(size=12,
-                                                                     color="black"),
-        axis.title.y=element_text(size=12),
-        axis.text.x= element_text(size=10, color= "black",angle = 45, hjust = 1),
-        axis.title.x=element_text(size=12),
-        strip.text = element_blank())+
-  facet_wrap(~factor(Land_Coverage_Category,level=veg_order), nrow = 1)+
-  theme(strip.background = element_blank())+
-  scale_fill_manual(values=color_order2)  + 
-  scale_y_continuous(limits=c(0,150),breaks=seq(0,150,50))
